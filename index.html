@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Where's Waldo?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Titan+One&family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <h1>🔍 Where's Waldo?</h1>
+    <p class="tagline">Pick a scene and find him.</p>
+  </header>
+
+  <main>
+    <section id="home-view" class="home-view" aria-label="Home">
+      <img class="home-bg" src="images/hompage-image.jpg" alt="Where's Wally?">
+      <div class="home-actions">
+        <button id="choose-map-btn" class="stamp-btn">Choose<br>a Map</button>
+        <button id="random-btn" class="stamp-btn stamp-btn-accent">Random</button>
+      </div>
+    </section>
+
+    <section id="puzzle-list-view" class="puzzle-list-view hidden" aria-label="Puzzle list">
+      <div class="stripe-bar" aria-hidden="true"></div>
+      <div class="list-header">
+        <button id="list-home-btn" class="stamp-btn stamp-btn-small" title="Home">&larr;<br>Home</button>
+        <div class="list-heading">
+          <h2 class="list-title"><span class="title-blue">Choose</span> <span class="title-red">a Map</span></h2>
+          <p class="list-tagline">🔍 Pick a scene and find him!</p>
+        </div>
+      </div>
+      <div id="puzzle-list" class="puzzle-grid">
+        <p class="loading">Loading puzzles...</p>
+      </div>
+      <div class="stripe-bar" aria-hidden="true"></div>
+    </section>
+
+    <section id="game-view" class="game-view hidden" aria-label="Game">
+      <div class="game-toolbar">
+        <button id="back-btn" class="map-icon-btn" title="Back">&larr;</button>
+      </div>
+      <h2 id="game-title"></h2>
+      <div class="image-wrap" id="image-wrap">
+        <img id="game-image" alt="Where's Wally scene">
+
+        <div class="map-controls">
+          <div class="zoom-pill">
+            <button id="zoom-in-btn" class="zoom-btn" title="Zoom in">+</button>
+            <div class="zoom-divider"></div>
+            <button id="zoom-out-btn" class="zoom-btn" title="Zoom out">&minus;</button>
+          </div>
+          <button id="zoom-reset-btn" class="map-icon-btn recenter-btn" title="Reset view">&#8982;</button>
+          <button id="minimap-toggle-btn" class="map-icon-btn" title="Hide map">&#9635;</button>
+          <div class="minimap" id="minimap">
+            <img id="minimap-image" alt="">
+            <div class="minimap-viewport" id="minimap-viewport"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Add your own scenes in <code>puzzles.js</code> and <code>images/</code>. Use <a href="tools/coord-finder.html">tools/coord-finder.html</a> to find target coordinates.</p>
+  </footer>
+
+  <script src="puzzles.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
