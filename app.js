@@ -10,6 +10,7 @@ const els = {
   title: document.getElementById('game-title'),
   imageWrap: document.getElementById('image-wrap'),
   image: document.getElementById('game-image'),
+  markersOverlay: document.getElementById('markers-overlay'),
   zoomInBtn: document.getElementById('zoom-in-btn'),
   zoomOutBtn: document.getElementById('zoom-out-btn'),
   zoomResetBtn: document.getElementById('zoom-reset-btn'),
@@ -17,10 +18,31 @@ const els = {
   minimap: document.getElementById('minimap'),
   minimapImage: document.getElementById('minimap-image'),
   minimapViewport: document.getElementById('minimap-viewport'),
+  characterAvatars: document.getElementById('character-avatars'),
+  missFeedback: document.getElementById('miss-feedback'),
+  foundFeedback: document.getElementById('found-feedback'),
+  allFoundBanner: document.getElementById('all-found-banner'),
+  allWatchersBanner: document.getElementById('all-watchers-banner'),
+  everythingFoundBanner: document.getElementById('everything-found-banner'),
+  coordReadout: document.getElementById('coord-readout'),
+};
+
+const CHARACTER_META = {
+  waldo: { name: 'Waldo', initial: 'Wa', avatar: 'images/characters/waldo.png' },
+  woof: { name: 'Woof', initial: 'Wo', avatar: 'images/characters/woof.png' },
+  wenda: { name: 'Wenda', initial: 'We', avatar: 'images/characters/wenda.png' },
+  wizard: { name: 'Wizard Whitebeard', initial: 'Wi', avatar: 'images/characters/wizard.png' },
+  odlaw: { name: 'Odlaw', initial: 'Od', avatar: 'images/characters/odlaw.png' },
 };
 
 const puzzles = typeof PUZZLES !== 'undefined' ? PUZZLES : [];
 let current = null;
+let foundIds = new Set();
+let foundWatcherIndices = new Set();
+let allFoundBannerTimeout = null;
+let allWatchersBannerTimeout = null;
+let everythingFoundBannerTimeout = null;
+let activeMarkers = []; // [{ xPercent, yPercent, el }]
 
 // Tuned for touch devices used by kids: gentle zoom steps, a lower max
 // (page scans are ~150dpi and get blurry/hard to control past this), and
@@ -93,8 +115,42 @@ function showView(view) {
   document.body.classList.toggle('is-playing', view === 'game');
 }
 
+// --- Browser/device back-button support: every navigation between the three
+// views pushes a history entry, and popstate replays the matching view
+// instead of pushing a new one. In-app back buttons just call history.back()
+// so they and the hardware/browser back button stay in sync. ---
+
+function navigate(state) {
+  history.pushState(state, '');
+  renderState(state);
+}
+
+function renderState(state) {
+  if (state.view === 'game') {
+    const puzzle = puzzles.find((p) => p.id === state.puzzleId);
+    if (!puzzle) {
+      showView('home');
+      return;
+    }
+    returnView = state.from || 'home';
+    loadPuzzle(puzzle);
+  } else if (state.view === 'list') {
+    showView('list');
+    renderList();
+  } else {
+    showView('home');
+  }
+}
+
+window.addEventListener('popstate', (evt) => {
+  renderState(evt.state || { view: 'home' });
+});
+
 function startPuzzle(puzzle, from) {
-  if (from) returnView = from;
+  navigate({ view: 'game', puzzleId: puzzle.id, from: from || 'home' });
+}
+
+function loadPuzzle(puzzle) {
   current = puzzle;
   els.title.textContent = puzzle.title;
   showView('game');
@@ -105,12 +161,65 @@ function startPuzzle(puzzle, from) {
   ty = 0;
   els.image.src = puzzle.image;
   els.minimapImage.src = puzzle.image;
+
+  foundIds = new Set();
+  foundWatcherIndices = new Set();
+  clearTimeout(allFoundBannerTimeout);
+  clearTimeout(allWatchersBannerTimeout);
+  clearTimeout(everythingFoundBannerTimeout);
+  els.allFoundBanner.classList.add('hidden');
+  els.allWatchersBanner.classList.add('hidden');
+  els.everythingFoundBanner.classList.add('hidden');
+  els.missFeedback.classList.add('hidden');
+  els.foundFeedback.classList.add('hidden');
+  els.markersOverlay.innerHTML = '';
+  activeMarkers = [];
+  els.coordReadout.textContent = 'x: -- %  y: -- %';
+  renderCharacterBar();
+}
+
+function renderCharacterBar() {
+  const characters = (current && current.characters) || [];
+  els.characterAvatars.innerHTML = '';
+  for (const char of characters) {
+    const meta = CHARACTER_META[char.id] || { name: char.id, initial: '?' };
+    const avatar = document.createElement('div');
+    avatar.className = `character-avatar avatar-${char.id}`;
+    avatar.dataset.characterId = char.id;
+    avatar.title = meta.name;
+    if (meta.avatar) {
+      avatar.classList.add('has-photo');
+      avatar.innerHTML = `<img src="${meta.avatar}" alt="${meta.name}">`;
+    } else {
+      avatar.textContent = meta.initial;
+    }
+    els.characterAvatars.appendChild(avatar);
+  }
+
+  const watchers = (current && current.watchers) || [];
+  if (watchers.length) {
+    const counter = document.createElement('div');
+    counter.className = 'character-avatar watcher-counter';
+    counter.id = 'watcher-counter';
+    counter.title = 'Waldo-Watchers found';
+    els.characterAvatars.appendChild(counter);
+    updateWatcherCounter();
+  }
+}
+
+function updateWatcherCounter() {
+  const watchers = (current && current.watchers) || [];
+  const counterEl = document.getElementById('watcher-counter');
+  if (!counterEl || !watchers.length) return;
+  const total = watchers.length;
+  const found = foundWatcherIndices.size;
+  counterEl.textContent = found >= total ? `${found}/${total}` : `${found}/?`;
+  counterEl.classList.toggle('found', found >= total);
 }
 
 function stopGame() {
   cancelMomentum();
-  showView(returnView);
-  renderList();
+  history.back();
 }
 
 // --- Layout: fit the image inside its container like object-fit:contain,
@@ -189,9 +298,33 @@ function setMinimapVisible(visible) {
   els.minimapToggleBtn.classList.toggle('map-icon-btn-active', !visible);
 }
 
+// Markers live in #markers-overlay, a sibling of #image-wrap that is never
+// clipped by that container's overflow:hidden. Since they don't inherit the
+// image's CSS transform, their screen position + scale is recomputed by
+// hand here on every pan/zoom update.
+
+function imagePercentToContainerPx(xPercent, yPercent) {
+  const localX = (xPercent / 100) * baseRect.width;
+  const localY = (yPercent / 100) * baseRect.height;
+  return {
+    x: baseRect.left + tx + scale * localX,
+    y: baseRect.top + ty + scale * localY,
+  };
+}
+
+function updateMarkerPositions() {
+  for (const marker of activeMarkers) {
+    const pos = imagePercentToContainerPx(marker.xPercent, marker.yPercent);
+    marker.el.style.left = `${pos.x}px`;
+    marker.el.style.top = `${pos.y}px`;
+    marker.el.style.transform = `scale(${scale})`;
+  }
+}
+
 function applyTransform() {
   els.image.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
   updateMinimapViewport();
+  updateMarkerPositions();
 }
 
 function clampPan() {
@@ -361,6 +494,7 @@ function startMomentum(vx, vy) {
 
 els.imageWrap.addEventListener('pointerdown', (evt) => {
   if (!current) return;
+  if (evt.target.closest('.map-controls')) return;
   cancelMomentum();
   cancelZoomAnim();
   els.imageWrap.setPointerCapture(evt.pointerId);
@@ -384,6 +518,17 @@ els.imageWrap.addEventListener('pointerdown', (evt) => {
       startScale: scale,
     };
   }
+});
+
+// Live xPercent/yPercent readout (bottom-left) for calibrating puzzles.js
+// coordinates by eye — updates on every pointer move, independent of
+// drag/pinch state, so it works with a plain mouse hover too.
+els.imageWrap.addEventListener('pointermove', (evt) => {
+  if (!current) return;
+  const rect = els.image.getBoundingClientRect();
+  const xPercent = ((evt.clientX - rect.left) / rect.width) * 100;
+  const yPercent = ((evt.clientY - rect.top) / rect.height) * 100;
+  els.coordReadout.textContent = `x: ${xPercent.toFixed(1)}%  y: ${yPercent.toFixed(1)}%`;
 });
 
 els.imageWrap.addEventListener('pointermove', (evt) => {
@@ -418,6 +563,11 @@ els.imageWrap.addEventListener('pointermove', (evt) => {
 });
 
 function onPointerEnd(evt) {
+  const wasSingleClick = dragState
+    && dragState.pointerId === evt.pointerId
+    && !dragState.moved
+    && pointers.size === 1;
+
   const wasDrag = dragState && dragState.pointerId === evt.pointerId && dragState.moved;
 
   if (wasDrag && moveHistory.length >= 2) {
@@ -437,10 +587,153 @@ function onPointerEnd(evt) {
     dragState = null;
     els.imageWrap.classList.remove('panning');
   }
+
+  if (wasSingleClick) {
+    handleTap(evt.clientX, evt.clientY);
+  }
 }
 
 els.imageWrap.addEventListener('pointerup', onPointerEnd);
 els.imageWrap.addEventListener('pointercancel', onPointerEnd);
+
+// --- Hit testing: getBoundingClientRect() already reflects the current
+// zoom/pan transform, so the percentage math is correct at any scale. ---
+
+function handleTap(clientX, clientY) {
+  if (!current) return;
+  const characters = current.characters || [];
+  const watchers = current.watchers || [];
+  if (!characters.length && !watchers.length) return;
+
+  const rect = els.image.getBoundingClientRect();
+  const xPercent = ((clientX - rect.left) / rect.width) * 100;
+  const yPercent = ((clientY - rect.top) / rect.height) * 100;
+
+  const hit = characters.find((char) => {
+    if (foundIds.has(char.id)) return false;
+    const dx = xPercent - char.xPercent;
+    const dy = yPercent - char.yPercent;
+    return Math.sqrt(dx * dx + dy * dy) <= char.radiusPercent;
+  });
+
+  if (hit) {
+    // Snap to the character's actual recorded spot, not the click point.
+    onFound(hit);
+    return;
+  }
+
+  const watcherIdx = watchers.findIndex((w, idx) => {
+    if (foundWatcherIndices.has(idx)) return false;
+    const dx = xPercent - w.xPercent;
+    const dy = yPercent - w.yPercent;
+    return Math.sqrt(dx * dx + dy * dy) <= w.radiusPercent;
+  });
+
+  if (watcherIdx !== -1) {
+    onWatcherFound(watcherIdx, watchers[watcherIdx]);
+  } else {
+    onMiss(xPercent, yPercent);
+  }
+}
+
+function addMarker(className, xPercent, yPercent) {
+  const marker = document.createElement('div');
+  marker.className = className;
+  els.markersOverlay.appendChild(marker);
+  const entry = { xPercent, yPercent, el: marker };
+  activeMarkers.push(entry);
+  const pos = imagePercentToContainerPx(xPercent, yPercent);
+  marker.style.left = `${pos.x}px`;
+  marker.style.top = `${pos.y}px`;
+  marker.style.transform = `scale(${scale})`;
+  return entry;
+}
+
+function removeMarker(entry) {
+  entry.el.remove();
+  activeMarkers = activeMarkers.filter((m) => m !== entry);
+}
+
+function charactersComplete() {
+  return !current.characters || !current.characters.length || foundIds.size >= current.characters.length;
+}
+
+function watchersComplete() {
+  return !current.watchers || !current.watchers.length || foundWatcherIndices.size >= current.watchers.length;
+}
+
+function showBanner(el, timeoutRef) {
+  clearTimeout(timeoutRef);
+  el.classList.remove('hidden');
+  return setTimeout(() => el.classList.add('hidden'), 3000);
+}
+
+function checkEverythingFound() {
+  const hasBoth = current.characters && current.characters.length && current.watchers && current.watchers.length;
+  if (hasBoth && charactersComplete() && watchersComplete()) {
+    // The "everything found" banner is the finale — nothing else should be
+    // on screen at the same time, so hide any other message immediately.
+    clearTimeout(allFoundBannerTimeout);
+    clearTimeout(allWatchersBannerTimeout);
+    clearTimeout(showFoundFeedback.hideTimeout);
+    els.allFoundBanner.classList.add('hidden');
+    els.allWatchersBanner.classList.add('hidden');
+    els.foundFeedback.classList.add('hidden');
+
+    // Stays visible for the rest of the puzzle instead of auto-hiding.
+    clearTimeout(everythingFoundBannerTimeout);
+    els.everythingFoundBanner.classList.remove('hidden');
+  }
+}
+
+function showFoundFeedback(message) {
+  els.foundFeedback.textContent = message;
+  els.foundFeedback.classList.remove('hidden');
+  clearTimeout(showFoundFeedback.hideTimeout);
+  showFoundFeedback.hideTimeout = setTimeout(() => els.foundFeedback.classList.add('hidden'), 1800);
+}
+
+function onFound(character) {
+  foundIds.add(character.id);
+
+  addMarker('found-marker', character.xPercent, character.yPercent);
+
+  const avatar = els.characterAvatars.querySelector(`[data-character-id="${character.id}"]`);
+  if (avatar) avatar.classList.add('found');
+
+  els.missFeedback.classList.add('hidden');
+
+  const meta = CHARACTER_META[character.id];
+  showFoundFeedback(`You found ${meta ? meta.name : character.id}!`);
+
+  if (charactersComplete()) {
+    allFoundBannerTimeout = showBanner(els.allFoundBanner, allFoundBannerTimeout);
+  }
+  checkEverythingFound();
+}
+
+function onWatcherFound(index, watcher) {
+  foundWatcherIndices.add(index);
+  addMarker('found-marker', watcher.xPercent, watcher.yPercent);
+  updateWatcherCounter();
+  els.missFeedback.classList.add('hidden');
+
+  showFoundFeedback('You found a Watcher!');
+
+  if (watchersComplete()) {
+    allWatchersBannerTimeout = showBanner(els.allWatchersBanner, allWatchersBannerTimeout);
+  }
+  checkEverythingFound();
+}
+
+function onMiss(xPercent, yPercent) {
+  els.missFeedback.classList.remove('hidden');
+  clearTimeout(onMiss.hideTimeout);
+  onMiss.hideTimeout = setTimeout(() => els.missFeedback.classList.add('hidden'), 1200);
+
+  const entry = addMarker('miss-marker', xPercent, yPercent);
+  entry.el.addEventListener('animationend', () => removeMarker(entry));
+}
 
 // --- Minimap: click or drag on it to jump the main view to that spot. ---
 
@@ -532,8 +825,7 @@ els.minimapToggleBtn.addEventListener('click', () => {
 });
 
 els.chooseMapBtn.addEventListener('click', () => {
-  showView('list');
-  renderList();
+  navigate({ view: 'list' });
 });
 
 els.randomBtn.addEventListener('click', () => {
@@ -541,11 +833,11 @@ els.randomBtn.addEventListener('click', () => {
     const puzzle = puzzles[Math.floor(Math.random() * puzzles.length)];
     startPuzzle(puzzle, 'home');
   } else {
-    showView('list');
-    renderList();
+    navigate({ view: 'list' });
   }
 });
 
-els.listHomeBtn.addEventListener('click', () => showView('home'));
+els.listHomeBtn.addEventListener('click', () => history.back());
 
+history.replaceState({ view: 'home' }, '');
 showView('home');

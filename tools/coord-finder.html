@@ -8,62 +8,151 @@
   h1 { font-size: 1.3rem; }
   .controls { margin-bottom: 1rem; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
   input[type="file"] { padding: 0.3rem; }
+  .char-picker { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .char-btn {
+    padding: 0.4rem 0.8rem; border-radius: 999px; border: 2px solid #1c1c1c;
+    background: white; cursor: pointer; font-weight: 700; font-size: 0.85rem;
+  }
+  .char-btn.active { background: #1c1c1c; color: white; }
+  .char-btn.done { opacity: 0.5; }
   .wrap { position: relative; display: inline-block; cursor: crosshair; max-width: 100%; }
   .wrap img { max-width: 100%; display: block; }
-  .marker { position: absolute; width: 16px; height: 16px; margin-left: -8px; margin-top: -8px; border: 3px solid red; border-radius: 50%; pointer-events: none; }
-  pre { background: #1c1c1c; color: #eee; padding: 1rem; border-radius: 8px; max-width: 600px; overflow-x: auto; }
+  .marker {
+    position: absolute; width: 16px; height: 16px; margin-left: -8px; margin-top: -8px;
+    border: 3px solid red; border-radius: 50%; pointer-events: none;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .marker span {
+    position: absolute; top: -1.3rem; left: 50%; transform: translateX(-50%);
+    background: #1c1c1c; color: white; font-size: 0.65rem; padding: 0.1rem 0.35rem;
+    border-radius: 4px; white-space: nowrap;
+  }
+  pre { background: #1c1c1c; color: #eee; padding: 1rem; border-radius: 8px; max-width: 700px; overflow-x: auto; }
   .hint { color: #555; }
+  button.reset { padding: 0.4rem 0.8rem; }
 </style>
 </head>
 <body>
   <h1>Waldo Coordinate Finder</h1>
-  <p class="hint">Load an image (e.g. a page you exported from your PDF), click directly on the target (Waldo), and copy the generated JSON snippet into <code>puzzles.json</code>.</p>
+  <p class="hint">Load an image, pick which character you're marking below, then click directly on them in the image. Repeat for each character present in the scene, then copy the generated <code>characters</code> snippet into <code>puzzles.js</code>.</p>
   <div class="controls">
     <input type="file" id="file-input" accept="image/*">
     <label>Radius %: <input type="number" id="radius" value="3" min="0.5" max="15" step="0.5" style="width:4rem"></label>
+    <button class="reset" id="reset-btn">Reset points</button>
   </div>
+  <div class="char-picker" id="char-picker"></div>
   <div class="wrap" id="wrap">
     <img id="img" alt="Loaded scene">
-    <div class="marker" id="marker" style="display:none"></div>
   </div>
   <h3>Snippet</h3>
   <pre id="output">Click on the image to generate coordinates.</pre>
 
 <script>
+const CHARACTERS = [
+  { id: 'waldo', label: 'Waldo' },
+  { id: 'woof', label: 'Woof' },
+  { id: 'wenda', label: 'Wenda' },
+  { id: 'wizard', label: 'Wizard' },
+  { id: 'odlaw', label: 'Odlaw' },
+];
+
 const fileInput = document.getElementById('file-input');
 const img = document.getElementById('img');
 const wrap = document.getElementById('wrap');
-const marker = document.getElementById('marker');
 const output = document.getElementById('output');
 const radiusInput = document.getElementById('radius');
+const charPicker = document.getElementById('char-picker');
+const resetBtn = document.getElementById('reset-btn');
+
+let activeId = CHARACTERS[0].id;
+const points = {}; // id -> {xPercent, yPercent}
+
+function renderPicker() {
+  charPicker.innerHTML = '';
+  for (const c of CHARACTERS) {
+    const btn = document.createElement('button');
+    btn.className = 'char-btn' + (c.id === activeId ? ' active' : '') + (points[c.id] ? ' done' : '');
+    btn.textContent = c.label + (points[c.id] ? ' ✓' : '');
+    btn.addEventListener('click', () => { activeId = c.id; renderPicker(); });
+    charPicker.appendChild(btn);
+  }
+}
+
+function renderMarkers() {
+  wrap.querySelectorAll('.marker').forEach(m => m.remove());
+  for (const c of CHARACTERS) {
+    const p = points[c.id];
+    if (!p) continue;
+    const marker = document.createElement('div');
+    marker.className = 'marker';
+    marker.style.left = p.xPercent + '%';
+    marker.style.top = p.yPercent + '%';
+    marker.innerHTML = `<span>${c.label}</span>`;
+    wrap.appendChild(marker);
+  }
+}
+
+function renderOutput() {
+  const radiusPercent = parseFloat(radiusInput.value);
+  const characters = CHARACTERS
+    .filter(c => points[c.id])
+    .map(c => ({
+      id: c.id,
+      xPercent: Math.round(points[c.id].xPercent * 100) / 100,
+      yPercent: Math.round(points[c.id].yPercent * 100) / 100,
+      radiusPercent,
+    }));
+
+  if (!characters.length) {
+    output.textContent = 'Click on the image to generate coordinates.';
+    return;
+  }
+
+  const snippet = {
+    id: 'my-scene',
+    title: 'My Scene',
+    image: 'images/Maps/my-scene.jpg',
+    thumbnail: 'images/Maps/thumbs/my-scene.jpg',
+    difficulty: 'medium',
+    characters,
+  };
+  output.textContent = JSON.stringify(snippet, null, 2);
+}
 
 fileInput.addEventListener('change', () => {
   const file = fileInput.files[0];
   if (!file) return;
   img.src = URL.createObjectURL(file);
+  Object.keys(points).forEach(k => delete points[k]);
+  renderPicker();
+  renderMarkers();
+  renderOutput();
 });
 
 img.addEventListener('click', (evt) => {
   const rect = img.getBoundingClientRect();
   const xPercent = ((evt.clientX - rect.left) / rect.width) * 100;
   const yPercent = ((evt.clientY - rect.top) / rect.height) * 100;
-  marker.style.left = xPercent + '%';
-  marker.style.top = yPercent + '%';
-  marker.style.display = 'block';
+  points[activeId] = { xPercent, yPercent };
 
-  const snippet = {
-    id: 'my-scene',
-    title: 'My Scene',
-    image: 'images/my-scene.jpg',
-    thumbnail: 'images/my-scene-thumb.jpg',
-    target: {
-      xPercent: Math.round(xPercent * 100) / 100,
-      yPercent: Math.round(yPercent * 100) / 100,
-      radiusPercent: parseFloat(radiusInput.value)
-    }
-  };
-  output.textContent = JSON.stringify(snippet, null, 2);
+  // Auto-advance to the next character that hasn't been placed yet.
+  const next = CHARACTERS.find(c => !points[c.id]);
+  if (next) activeId = next.id;
+
+  renderPicker();
+  renderMarkers();
+  renderOutput();
 });
+
+resetBtn.addEventListener('click', () => {
+  Object.keys(points).forEach(k => delete points[k]);
+  activeId = CHARACTERS[0].id;
+  renderPicker();
+  renderMarkers();
+  renderOutput();
+});
+
+renderPicker();
 </script>
 </body>
 </html>

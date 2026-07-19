@@ -40,10 +40,11 @@
     </section>
 
     <section id="game-view" class="game-view hidden" aria-label="Game">
-      <div class="game-toolbar">
+      <div class="character-bar">
         <button id="back-btn" class="map-icon-btn" title="Back">&larr;</button>
+        <h2 id="game-title"></h2>
+        <div class="character-avatars" id="character-avatars"></div>
       </div>
-      <h2 id="game-title"></h2>
       <div class="image-wrap" id="image-wrap">
         <img id="game-image" alt="Where's Wally scene">
 
@@ -60,7 +61,14 @@
             <div class="minimap-viewport" id="minimap-viewport"></div>
           </div>
         </div>
+        <div class="coord-readout" id="coord-readout">x: -- % y: -- %</div>
       </div>
+      <div class="markers-overlay" id="markers-overlay"></div>
+      <p id="miss-feedback" class="miss-feedback hidden">Not quite, keep looking!</p>
+      <p id="found-feedback" class="found-feedback hidden"></p>
+      <div id="all-found-banner" class="all-found-banner hidden">🎉 You found all Waldo's Friends!</div>
+      <div id="all-watchers-banner" class="all-found-banner watchers-banner hidden">🔍 You found all the Watchers!</div>
+      <div id="everything-found-banner" class="all-found-banner everything-banner hidden">🏆 You found everyone on the map! Great job!</div>
     </section>
   </main>
 
