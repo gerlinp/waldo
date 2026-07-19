@@ -4,10 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Where's Waldo?</title>
+<!-- Bump the ?v= query on style.css/puzzles.js/app.js below whenever those files change,
+     so visitors' browsers fetch the new version instead of an old cached copy. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Titan+One&family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20260719">
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 </head>
 <body>
   <header class="site-header">
@@ -72,11 +75,7 @@
     </section>
   </main>
 
-  <footer class="site-footer">
-    <p>Add your own scenes in <code>puzzles.js</code> and <code>images/</code>. Use <a href="tools/coord-finder.html">tools/coord-finder.html</a> to find target coordinates.</p>
-  </footer>
-
-  <script src="puzzles.js"></script>
-  <script src="app.js"></script>
+  <script src="puzzles.js?v=20260719"></script>
+  <script src="app.js?v=20260719"></script>
 </body>
 </html>

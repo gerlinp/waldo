@@ -30,9 +30,7 @@ const PUZZLES = [
     image: "images/Maps/waldo-1.jpeg",
     thumbnail: "images/Maps/thumbs/waldo-1.jpeg",
     difficulty: "medium",
-    characters: [
-      { id: "waldo", xPercent: 50, yPercent: 50, radiusPercent: 3 }, // TODO: set with tools/coord-finder.html
-    ],
+    characters: [], // TODO: not calibrated yet — add coordinates with tools/coord-finder.html
   },
   {
     id: "OTfytjA",
@@ -40,9 +38,7 @@ const PUZZLES = [
     image: "images/Maps/OTfytjA.jpeg",
     thumbnail: "images/Maps/thumbs/OTfytjA.jpeg",
     difficulty: "medium",
-    characters: [
-      { id: "waldo", xPercent: 50, yPercent: 50, radiusPercent: 3 }, // TODO: set with tools/coord-finder.html
-    ],
+    characters: [], // TODO: not calibrated yet — add coordinates with tools/coord-finder.html
   },
   {
     id: "nf6oSGR",
@@ -74,9 +70,7 @@ const PUZZLES = [
     image: "images/Maps/btsRJjC.jpeg",
     thumbnail: "images/Maps/thumbs/btsRJjC.jpeg",
     difficulty: "very-hard",
-    characters: [
-      { id: "waldo", xPercent: 50, yPercent: 50, radiusPercent: 3 }, // TODO: set with tools/coord-finder.html
-    ],
+    characters: [], // TODO: not calibrated yet — add coordinates with tools/coord-finder.html
   },
   {
     id: "wp7156926",
@@ -84,9 +78,7 @@ const PUZZLES = [
     image: "images/Maps/wp7156926-wheres-wally-wallpapers.jpg",
     thumbnail: "images/Maps/thumbs/wp7156926-wheres-wally-wallpapers.jpg",
     difficulty: "hard",
-    characters: [
-      { id: "waldo", xPercent: 50, yPercent: 50, radiusPercent: 3 }, // TODO: set with tools/coord-finder.html
-    ],
+    characters: [], // TODO: not calibrated yet — add coordinates with tools/coord-finder.html
   },
   {
     id: "wp7156929",
@@ -94,19 +86,15 @@ const PUZZLES = [
     image: "images/Maps/wp7156929-wheres-wally-wallpapers.jpg",
     thumbnail: "images/Maps/thumbs/wp7156929-wheres-wally-wallpapers.jpg",
     difficulty: "medium",
-    characters: [
-      { id: "waldo", xPercent: 50, yPercent: 50, radiusPercent: 3 }, // TODO: set with tools/coord-finder.html
-    ],
+    characters: [], // TODO: not calibrated yet — add coordinates with tools/coord-finder.html
   },
   {
     id: "wp7156930",
     title: "The Unfriendly Giants",
-    image: "images/Maps/wp7156930.jpg",
-    thumbnail: "images/Maps/thumbs/wp7156930.jpg",
+    image: "images/Maps/Wheres-Waldo-GIANTS-Super-High-Resolution-scaled-e1737404380369.jpg",
+    thumbnail: "images/Maps/thumbs/Wheres-Waldo-GIANTS-Super-High-Resolution-scaled-e1737404380369.jpg",
     difficulty: "medium",
-    characters: [
-      { id: "waldo", xPercent: 50, yPercent: 50, radiusPercent: 3 }, // TODO: set with tools/coord-finder.html
-    ],
+    characters: [], // TODO: not calibrated yet — add coordinates with tools/coord-finder.html
   },
   {
     id: "h13Dsf1",
@@ -114,9 +102,7 @@ const PUZZLES = [
     image: "images/Maps/h13Dsf1.jpg",
     thumbnail: "images/Maps/thumbs/h13Dsf1.jpg",
     difficulty: "medium",
-    characters: [
-      { id: "waldo", xPercent: 50, yPercent: 50, radiusPercent: 3 }, // TODO: set with tools/coord-finder.html
-    ],
+    characters: [], // TODO: not calibrated yet — add coordinates with tools/coord-finder.html
   },
   {
     id: "wp7156928",
@@ -124,8 +110,62 @@ const PUZZLES = [
     image: "images/Maps/wp7156928-wheres-wally-wallpapers.jpg",
     thumbnail: "images/Maps/thumbs/wp7156928-wheres-wally-wallpapers.jpg",
     difficulty: "easy",
-    characters: [
-      { id: "waldo", xPercent: 50, yPercent: 50, radiusPercent: 3 }, // TODO: set with tools/coord-finder.html
-    ],
+    characters: [], // TODO: not calibrated yet — add coordinates with tools/coord-finder.html
+  },
+  {
+    id: "candy-factory",
+    title: "The Candy Factory",
+    image: "images/Maps/Wheres-Waldo-Candy-Factory-Super-High-Resolution-scaled.jpg",
+    thumbnail: "images/Maps/thumbs/Wheres-Waldo-Candy-Factory-Super-High-Resolution-scaled.jpg",
+    difficulty: "very-hard",
+    characters: [], // TODO: not calibrated yet — add coordinates with tools/coord-finder.html
+  },
+  {
+    id: "film-set",
+    title: "The Film Set",
+    image: "images/Maps/Wheres-Waldo-Film-Set-Super-High-Resolution-scaled.jpg",
+    thumbnail: "images/Maps/thumbs/Wheres-Waldo-Film-Set-Super-High-Resolution-scaled.jpg",
+    difficulty: "medium",
+    characters: [], // TODO: not calibrated yet — add coordinates with tools/coord-finder.html
+  },
+  {
+    id: "deep-sea-divers",
+    title: "The Deep-Sea Divers",
+    image: "images/Maps/Wheres-Waldo-Ocean-Super-High-Resolution-scaled-e1737403627172.jpg",
+    thumbnail: "images/Maps/thumbs/Wheres-Waldo-Ocean-Super-High-Resolution-scaled-e1737403627172.jpg",
+    difficulty: "hard",
+    characters: [], // TODO: not calibrated yet — add coordinates with tools/coord-finder.html
+  },
+  {
+    id: "skiing",
+    title: "The Ski Slope",
+    image: "images/Maps/Wheres-Waldo-Skiing-Super-High-Resolution-scaled.jpg",
+    thumbnail: "images/Maps/thumbs/Wheres-Waldo-Skiing-Super-High-Resolution-scaled.jpg",
+    difficulty: "medium",
+    characters: [], // TODO: not calibrated yet — add coordinates with tools/coord-finder.html
+  },
+  {
+    id: "space-station",
+    title: "The Space Station",
+    image: "images/Maps/Wheres-Waldo-Space-Station-Super-High-Resolution-scaled.jpg",
+    thumbnail: "images/Maps/thumbs/Wheres-Waldo-Space-Station-Super-High-Resolution-scaled.jpg",
+    difficulty: "hard",
+    characters: [], // TODO: not calibrated yet — add coordinates with tools/coord-finder.html
+  },
+  {
+    id: "toys",
+    title: "Toys! Toys! Toys!",
+    image: "images/Maps/Wheres-Waldo-Toys-Super-High-Resolution-scaled.jpg",
+    thumbnail: "images/Maps/thumbs/Wheres-Waldo-Toys-Super-High-Resolution-scaled.jpg",
+    difficulty: "very-hard",
+    characters: [], // TODO: not calibrated yet — add coordinates with tools/coord-finder.html
+  },
+  {
+    id: "underground-hunters",
+    title: "The Underground Hunters",
+    image: "images/Maps/Wheres-Waldo-Underground-Super-High-Resolution-scaled.jpg",
+    thumbnail: "images/Maps/thumbs/Wheres-Waldo-Underground-Super-High-Resolution-scaled.jpg",
+    difficulty: "very-hard",
+    characters: [], // TODO: not calibrated yet — add coordinates with tools/coord-finder.html
   },
 ];

@@ -47,8 +47,7 @@ main {
 .hidden { display: none !important; }
 
 /* Home / hero screen: whole cover image visible on a black backdrop, buttons overlaid */
-body.is-home .site-header,
-body.is-home .site-footer {
+body.is-home .site-header {
   display: none;
 }
 
@@ -299,8 +298,7 @@ body.is-home main {
 }
 
 /* Game view: takes over the whole viewport so the image can be truly full screen */
-body.is-playing .site-header,
-body.is-playing .site-footer {
+body.is-playing .site-header {
   display: none;
 }
 
@@ -725,11 +723,3 @@ body.is-playing main {
   .minimap { width: 120px; height: 88px; }
 }
 
-.site-footer {
-  text-align: center;
-  padding: 1.5rem 1rem 2.5rem;
-  color: #777;
-  font-size: 0.9rem;
-}
-
-.site-footer a { color: var(--accent); }
